@@ -1,0 +1,75 @@
+library(shiny)
+
+ui <- fluidPage(
+  titlePanel("Evaluación Ética de Proyectos"),
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Responde las siguientes preguntas sobre el proyecto:"),
+      
+      # Generación de preguntas con casillas de verificación para Sí/No
+      uiOutput("preguntasFormulario"),
+      actionButton("evaluar", "Evaluar Proyecto", class = "btn-success"),
+      actionButton("reset", "Resetear", class = "btn-warning")
+    ),
+    mainPanel(
+      uiOutput("resultadoEvaluacion")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  preguntas <- c(
+    "¿El proyecto está alineado con los estándares legales y está libre de aplicaciones prohibidas?",
+    "¿Tiene el proyecto un potencial de uso dual que podría ser no ético o dañino?",
+    "¿Contribuye el proyecto positivamente a los Objetivos de Desarrollo Sostenible (ODS)?",
+    "¿Se involucran datos personales? ¿Se obtiene el consentimiento y se asegura la protección de datos?",
+    "¿Son las fuentes de datos fiables y libres de sesgos? ¿Es el tratamiento algorítmico robusto?",
+    "¿Se justifica la huella ambiental y el impacto socioeconómico del proyecto?",
+    "¿Los beneficios superan significativamente los riesgos?",
+    "¿Es el proyecto transparente sobre sus operaciones y permite la responsabilidad en caso de fallos?"
+  )
+
+  # Generar dinámicamente las preguntas con opciones Sí/No
+  output$preguntasFormulario <- renderUI({
+    lapply(1:length(preguntas), function(i) {
+      fluidRow(
+        column(12, 
+          wellPanel(
+            h5(preguntas[i]),
+            radioButtons(inputId = paste0("pregunta", i),
+                         label = NULL,
+                         choices = list("Sí" = "si", "No" = "no"),
+                         selected = character(0))
+          )
+        )
+      )
+    })
+  })
+  
+  # Observar cuando se evalúa el proyecto
+  observeEvent(input$evaluar, {
+    respuestas <- sapply(1:length(preguntas), function(i) input[[paste0("pregunta", i)]])
+    num_si <- sum(respuestas == "si", na.rm = TRUE)
+    num_no <- sum(respuestas == "no", na.rm = TRUE)
+    
+    resultado <- if (num_si > num_no) {
+      list(tags$span(style = "color: green; font-size: 20px;", "Evaluación Positiva"))
+    } else {
+      list(tags$span(style = "color: red; font-size: 20px;", "Evaluación Negativa"))
+    }
+    
+    output$resultadoEvaluacion <- renderUI({
+      resultado
+    })
+  })
+  
+  # Resetear el formulario
+  observeEvent(input$reset, {
+    lapply(1:length(preguntas), function(i) {
+      updateRadioButtons(session, paste0("pregunta", i), selected = character(0))
+    })
+    output$resultadoEvaluacion <- renderUI({ NULL })  # Limpiar el resultado de la evaluación
+  })
+}
+
+shinyApp(ui, server)
