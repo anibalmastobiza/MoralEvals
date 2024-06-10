@@ -1,2 +1,2 @@
-# MoralApp
+# MoralEvals
 Evaluación Ética de Proyectos
